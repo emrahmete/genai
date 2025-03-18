@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Agent Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>SQL Database Assistant</h1>
+            <button id="clearChatButton" class="clear-button">Yeni Sohbet</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message system">
+                Merhaba! Veritabanı hakkında sorular sorabilirsiniz. Örneğin: "Database'de kaç tablo var?" veya "Primary key sayısını göster"
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." autocomplete="off">
+            <button id="sendButton">Gönder</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
