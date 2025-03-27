@@ -39,11 +39,11 @@ def setup_openai_llm():
 # 2. PostgreSQL (Azure Cosmos ile bağlantı)
 def setup_postgresql_connection():
     connection = psycopg2.connect(
-        host="c-cosmos-postgre-cluster.luek4khyyhig63.postgres.cosmos.azure.com",
-        port="5432",
-        database="postgres-test-db",
-        user="citus",
-        password="123456Ce",
+        host="your_postgres_host",
+        port="your_postgres_port",
+        database="your_database_name",
+        user="your_username",
+        password="your_password",
         sslmode="require"
     )
     return connection
