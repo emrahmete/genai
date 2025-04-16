@@ -3,25 +3,983 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Agent Chatbot</title>
+    <title>Database Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 900px;
+            padding-top: 20px;
+        }
+        
+        .chat-header {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 12px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+        
+        #chatContainer {
+            background-color: #ffffff;
+            border: 1px solid #e1e5eb !important;
+            border-radius: 0 0 8px 8px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            height: 450px;
+            margin-bottom: 15px;
+            padding: 12px !important;
+            overflow-y: auto; /* Scroll özelliği için kritik */
+        }
+        
+        /* Mesaj sınıflarını düzelt */
+        .message {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 15px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            word-break: break-word;
+            width: fit-content;
+            max-width: 80%;
+        }
+
+        .message.system {
+            background-color: #f0f4c3;
+            margin: 10px auto;
+            border-radius: 18px;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .message.user {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-radius: 18px 18px 0 18px;
+            text-align: right;
+        }
+
+        .message.bot {
+            background-color: #f1f3f4;
+            margin-right: auto;
+            border-radius: 18px 18px 18px 0;
+            max-width: 85%;
+        }
+
+        .content {
+            width: 100%;
+        }
+
+        .sender {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #495057;
+            display: block;
+        }
+
+        .message-text {
+            overflow-wrap: break-word;
+        }
+
+        .message-text pre {
+            white-space: pre-wrap;
+            font-size: 13px;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            overflow-x: auto;
+            text-align: left;
+            margin-top: 8px;
+        }
+
+        .message-text table {
+            text-align: left;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        
+        .system-message {
+            background-color: #f0f4c3;
+            margin: 10px auto;
+            text-align: center;
+            border-radius: 18px;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            max-width: 90%;
+        }
+        
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            margin: 10px auto;
+            text-align: center;
+            border-radius: 18px;
+        }
+        
+        #messageArea {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+            justify-content: flex-end;
+        }
+        
+        .message-input-container {
+            background-color: #ffffff;
+            border: 1px solid #e1e5eb;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .controls-container {
+            background-color: #ffffff;
+            border: 1px solid #e1e5eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .modal-content {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            background-color: #4a6fa5;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        
+        /* Tablo stilleri */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.075);
+        }
+        
+        .table th, .table td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .table thead th {
+            border-bottom: 2px solid #dee2e6;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .table-sm th, .table-sm td {
+            padding: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>SQL Database Assistant</h1>
-            <button id="clearChatButton" class="clear-button">Yeni Sohbet</button>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message system">
-                Merhaba! Veritabanı hakkında sorular sorabilirsiniz. Örneğin: "Database'de kaç tablo var?" veya "Primary key sayısını göster"
+    <div class="container">
+        <h2 class="text-center chat-header">Database ChatBot</h2>
+        
+        <!-- Uyarı container'ı için bir ID ekleyin -->
+        <div id="configWarnings" class="alert alert-warning text-center {% if not llm_config_valid or not db_config_valid %}d-block{% else %}d-none{% endif %}">
+            <div id="llmWarning" class="{% if not llm_config_valid %}d-block{% else %}d-none{% endif %}">
+                <p><strong>Dil modeli yapılandırması eksik!</strong> Lütfen bir dil modeli yapılandırın.</p>
+            </div>
+            <div id="dbWarning" class="{% if not db_config_valid %}d-block{% else %}d-none{% endif %}">
+                <p><strong>Veritabanı bağlantısı yapılandırması eksik!</strong> Lütfen bir veritabanı bağlantısı yapılandırın.</p>
             </div>
         </div>
-        <div class="chat-input-container">
-            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." autocomplete="off">
-            <button id="sendButton">Gönder</button>
+        
+        <!-- Aktif model bilgisi -->
+        <div class="active-model-container mb-2">
+            <span class="active-model-label">Aktif Dil Modeli:</span>
+            <span id="activeModelName" class="active-model-name">Yükleniyor...</span>
+        </div>
+        
+        <div class="controls-container">
+            <div>
+                <button id="connectDbBtn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#dbConnectionModal">
+                    <i class="bi bi-database"></i> Veritabanı Bağlantısı
+                </button>
+                <button id="llmModelBtn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#llmModelModal">
+                    <i class="bi bi-robot"></i> Dil Modeli
+                </button>
+            </div>
+            <!-- Sohbeti temizle butonu -->
+            <button id="clearChatBtn" class="btn btn-outline-secondary">
+                <i class="bi bi-trash"></i> Sohbeti Temizle
+            </button>
+        </div>
+
+        <!-- Chat mesajları için konteyner -->
+        <div id="chatContainer" class="mb-3">
+            <div id="messageArea"></div>
+        </div>
+
+        <!-- Mesaj gönderme formu -->
+        <div class="message-input-container">
+            <div class="input-container">
+                <input type="text" id="userMessage" class="form-control" placeholder="Mesajınızı yazın...">
+                <button id="sendMessageBtn" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Gönder
+                </button>
+            </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <!-- Veritabanı Bağlantı Modal -->
+    <div class="modal fade" id="dbConnectionModal" tabindex="-1" aria-labelledby="dbConnectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dbConnectionModalLabel">Veritabanı Bağlantı Ayarları</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Kayıtlı Bağlantılar kısmı -->
+                    <div class="mb-4">
+                        <label class="form-label">Kayıtlı Bağlantılar</label>
+                        <div class="input-group">
+                            <select id="savedConnections" class="form-select">
+                                <option value="">-- Bağlantı Seçin --</option>
+                            </select>
+                            <button type="button" id="loadConnection" class="btn btn-outline-secondary">Yükle</button>
+                        </div>
+                    </div>
+                    <div id="connectionMessage" class="mt-3"></div>
+                    
+                    <hr>
+                    
+                    <!-- Yeni Bağlantı Formu -->
+                    <form id="dbConnectionForm">
+                        <div class="mb-3">
+                            <label for="connectionName" class="form-label">Bağlantı Adı</label>
+                            <input type="text" class="form-control" id="connectionName" placeholder="örn: Prod DB" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbHost" class="form-label">Host</label>
+                            <input type="text" class="form-control" id="dbHost" placeholder="örn: example.postgres.database.azure.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbName" class="form-label">Veritabanı Adı</label>
+                            <input type="text" class="form-control" id="dbName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbUser" class="form-label">Kullanıcı Adı</label>
+                            <input type="text" class="form-control" id="dbUser" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbPassword" class="form-label">Şifre</label>
+                            <input type="password" class="form-control" id="dbPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbPort" class="form-label">Port</label>
+                            <input type="number" class="form-control" id="dbPort" value="5432" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dbSslmode" class="form-label">SSL Modu</label>
+                            <select class="form-control" id="dbSslmode">
+                                <option value="require" selected>require</option>
+                                <option value="disable">disable</option>
+                                <option value="prefer">prefer</option>
+                                <option value="verify-ca">verify-ca</option>
+                                <option value="verify-full">verify-full</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <!-- Modal Footer kısmı -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <button type="button" class="btn btn-success" id="saveConnection">Kaydet</button>
+                    <button type="button" class="btn btn-primary" id="testAndSaveConnection">Test Et ve Bağlan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dil Modeli Modal -->
+    <div class="modal fade" id="llmModelModal" tabindex="-1" aria-labelledby="llmModelModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="llmModelModalLabel">Dil Modeli Ayarları</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Kayıtlı Dil Modelleri -->
+                    <div class="mb-4">
+                        <label class="form-label">Kayıtlı Dil Modelleri</label>
+                        <div class="input-group">
+                            <select id="savedModels" class="form-select">
+                                <option value="">-- Model Seçin --</option>
+                            </select>
+                            <button type="button" id="loadModel" class="btn btn-outline-secondary">Yükle</button>
+                            <button type="button" id="setAsDefaultModel" class="btn btn-outline-success">Varsayılan Yap</button>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Yeni Dil Modeli Formu -->
+                    <form id="llmModelForm">
+                        <div class="mb-3">
+                            <label for="modelName" class="form-label">Model Adı</label>
+                            <input type="text" class="form-control" id="modelName" placeholder="örn: GPT-4 Turbo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="deploymentName" class="form-label">Deployment Adı</label>
+                            <input type="text" class="form-control" id="deploymentName" placeholder="örn: gpt-4.1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="endpoint" class="form-label">Azure Endpoint</label>
+                            <input type="text" class="form-control" id="endpoint" placeholder="örn: https://example.openai.azure.com/" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API Key</label>
+                            <input type="password" class="form-control" id="apiKey" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiVersion" class="form-label">API Version</label>
+                            <input type="text" class="form-control" id="apiVersion" value="2024-12-01-preview" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="temperature" class="form-label">Temperature</label>
+                            <input type="number" class="form-control" id="temperature" value="0.0" min="0" max="2" step="0.1" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="isDefaultModel">
+                            <label class="form-check-label" for="isDefaultModel">Varsayılan model olarak ayarla</label>
+                        </div>
+                    </form>
+                    <div id="modelMessage" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <button type="button" class="btn btn-success" id="saveModel">Kaydet</button>
+                    <button type="button" class="btn btn-primary" id="testAndSaveModel">Test Et ve Kullan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elemanlarını seç
+            const userMessageInput = document.getElementById('userMessage');
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            const messageArea = document.getElementById('messageArea');
+            const clearChatBtn = document.getElementById('clearChatBtn');
+            const loadConnectionBtn = document.getElementById('loadConnection');
+            const savedConnectionsSelect = document.getElementById('savedConnections');
+            const connectionMessage = document.getElementById('connectionMessage');
+            const dbConnectionModal = new bootstrap.Modal(document.getElementById('dbConnectionModal'));
+            
+            // Dil modeli seçimleri için
+            const savedModelsSelect = document.getElementById('savedModels');
+            const loadModelBtn = document.getElementById('loadModel');
+            const setAsDefaultModelBtn = document.getElementById('setAsDefaultModel');
+            const saveModelBtn = document.getElementById('saveModel'); // Bu butonu seçin
+            const testAndSaveModelBtn = document.getElementById('testAndSaveModel'); // Bu butonu seçin
+            const modelMessage = document.getElementById('modelMessage');
+            
+            // Veritabanı bağlantıları için
+            const activeModelNameElement = document.getElementById('activeModelName');
+            const testAndSaveConnectionBtn = document.getElementById('testAndSaveConnection');
+            const saveConnectionBtn = document.getElementById('saveConnection'); // DB Kaydet butonu
+
+            // Bootstrap modal nesneleri
+            const llmModelModal = new bootstrap.Modal(document.getElementById('llmModelModal'));
+            // Removed duplicate declaration of dbConnectionModal
+
+            // Dil Modeli Kaydet Butonu
+            saveModelBtn.addEventListener('click', function() {
+                console.log('Save model button clicked');
+                const modelData = getLlmModelFormData();
+                
+                if (!modelData.name || !modelData.deployment_name || !modelData.endpoint || !modelData.api_key) {
+                    modelMessage.innerHTML = '<div class="alert alert-warning">Lütfen tüm gerekli alanları doldurun.</div>';
+                    return;
+                }
+                
+                modelMessage.innerHTML = '<div class="alert alert-info">Model kaydediliyor...</div>';
+                
+                // API'ye gönder (test etmeden)
+                fetch('/api/save_llm_model', { // Endpoint'i kontrol edin, gerekirse sadece kaydetme için ayrı bir endpoint yapın
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(modelData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        modelMessage.innerHTML = '<div class="alert alert-success">Model başarıyla kaydedildi!</div>';
+                        loadSavedModels(); // Kayıtlı modeller listesini güncelle
+                        if (modelData.is_default) {
+                            activeModelNameElement.textContent = modelData.name; // Aktif modeli güncelle
+                            updateConfigWarnings(); // Uyarıları güncelle
+                        }
+                        setTimeout(() => { llmModelModal.hide(); }, 1500);
+                    } else {
+                        modelMessage.innerHTML = `<div class="alert alert-danger">Kaydetme hatası: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Save model error:', error);
+                    modelMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+
+            // Dil Modeli Test Et ve Kullan Butonu
+            testAndSaveModelBtn.addEventListener('click', function() {
+                console.log('Test and save model button clicked');
+                const modelData = getLlmModelFormData();
+
+                if (!modelData.name || !modelData.deployment_name || !modelData.endpoint || !modelData.api_key) {
+                    modelMessage.innerHTML = '<div class="alert alert-warning">Lütfen tüm gerekli alanları doldurun.</div>';
+                    return;
+                }
+
+                modelMessage.innerHTML = '<div class="alert alert-info">Model test ediliyor ve kaydediliyor...</div>';
+
+                // API'ye gönder (test ve kaydetme)
+                fetch('/api/save_llm_model', { // Bu endpoint test edip kaydediyor olmalı
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(modelData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        modelMessage.innerHTML = '<div class="alert alert-success">Model başarıyla test edildi ve kaydedildi!</div>';
+                        loadSavedModels(); // Kayıtlı modeller listesini güncelle
+                        activeModelNameElement.textContent = modelData.name; // Aktif modeli hemen güncelle
+                        updateConfigWarnings(); // Uyarıları güncelle
+                        setTimeout(() => {
+                            llmModelModal.hide();
+                            addMessageToChat('system', `"${modelData.name}" dil modeli aktifleştirildi.`);
+                        }, 1500);
+                    } else {
+                        // Test başarısız olduysa veya kaydetme hatası varsa
+                        modelMessage.innerHTML = `<div class="alert alert-danger">Hata: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Test and save model error:', error);
+                    modelMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+            
+            // Dil Modeli form verilerini almak için yardımcı fonksiyon
+            function getLlmModelFormData() {
+                return {
+                    name: document.getElementById('modelName').value.trim(),
+                    deployment_name: document.getElementById('deploymentName').value.trim(),
+                    endpoint: document.getElementById('endpoint').value.trim(),
+                    api_key: document.getElementById('apiKey').value, // Şifre alanı olduğu için trim yapmıyoruz
+                    api_version: document.getElementById('apiVersion').value.trim(),
+                    temperature: parseFloat(document.getElementById('temperature').value),
+                    is_default: document.getElementById('isDefaultModel').checked
+                };
+            }
+
+            // Veritabanı Kaydet Butonu
+            saveConnectionBtn.addEventListener('click', function() {
+                console.log('Save connection button clicked');
+                const connectionData = getDbConnectionFormData();
+
+                if (!connectionData.connectionName || !connectionData.host || !connectionData.name || !connectionData.user || !connectionData.password) {
+                    connectionMessage.innerHTML = '<div class="alert alert-warning">Lütfen tüm gerekli alanları doldurun.</div>';
+                    return;
+                }
+
+                connectionMessage.innerHTML = '<div class="alert alert-info">Bağlantı kaydediliyor...</div>';
+
+                fetch('/api/save_connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(connectionData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        connectionMessage.innerHTML = '<div class="alert alert-success">Bağlantı başarıyla kaydedildi!</div>';
+                        loadSavedConnections(); // Kayıtlı bağlantılar listesini güncelle
+                        setTimeout(() => { dbConnectionModal.hide(); }, 1500);
+                    } else {
+                        connectionMessage.innerHTML = `<div class="alert alert-danger">Kaydetme hatası: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Save connection error:', error);
+                    connectionMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+
+            // Veritabanı form verilerini almak için yardımcı fonksiyon
+            function getDbConnectionFormData() {
+                 return {
+                    connectionName: document.getElementById('connectionName').value.trim(),
+                    host: document.getElementById('dbHost').value.trim(),
+                    name: document.getElementById('dbName').value.trim(),
+                    user: document.getElementById('dbUser').value.trim(),
+                    password: document.getElementById('dbPassword').value,
+                    port: document.getElementById('dbPort').value,
+                    sslmode: document.getElementById('dbSslmode').value
+                };
+            }
+
+            // Sohbeti temizle butonu
+            clearChatBtn.addEventListener('click', function() {
+                console.log('Clear chat button clicked');  // Debug için
+                
+                fetch('/api/clear_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Sohbet ekranını temizle
+                        messageArea.innerHTML = '';
+                        addMessageToChat('system', 'Sohbet geçmişi temizlendi.');
+                    } else {
+                        console.error('Clear chat error:', data.message);
+                        addMessageToChat('system', 'Sohbet temizlenirken bir hata oluştu.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Clear chat request error:', error);
+                    addMessageToChat('system', 'Sohbet temizlenirken bir hata oluştu.');
+                });
+            });
+            
+            // Bağlantı yükleme butonu
+            loadConnectionBtn.addEventListener('click', function() {
+                console.log('Load connection button clicked');  // Debug için
+                
+                const selectedConnection = savedConnectionsSelect.value;
+                console.log('Selected connection:', selectedConnection);  // Debug için
+                
+                if (!selectedConnection) {
+                    connectionMessage.innerHTML = '<div class="alert alert-warning">Lütfen bir bağlantı seçin</div>';
+                    return;
+                }
+                
+                connectionMessage.innerHTML = '<div class="alert alert-info">Bağlantı yükleniyor...</div>';
+                
+                fetch('/api/load_connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: selectedConnection }),
+                })
+                .then(response => {
+                    console.log('Load response status:', response.status);  // Debug için
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Load response data:', data);  // Debug için
+                    
+                    if (data.status === 'success') {
+                        connectionMessage.innerHTML = '<div class="alert alert-success">Bağlantı başarıyla yüklendi!</div>';
+                        setTimeout(() => {
+                            dbConnectionModal.hide();
+                            addMessageToChat('system', `"${selectedConnection}" veritabanına bağlandınız. Sorularınızı sorabilirsiniz.`);
+                            
+                            // Uyarıları güncelle
+                            updateConfigWarnings();
+                        }, 1500);
+                    } else {
+                        connectionMessage.innerHTML = `<div class="alert alert-danger">Bağlantı hatası: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Load error:', error);  // Debug için
+                    connectionMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+            
+            // Modal açıldığında bağlantıları yükle
+            document.getElementById('dbConnectionModal').addEventListener('show.bs.modal', function () {
+                loadSavedConnections();
+                connectionMessage.innerHTML = ''; // Önceki mesajları temizle
+            });
+            
+            // Kayıtlı veritabanlarını yükle
+            function loadSavedConnections() {
+                console.log('Loading saved connections...');  // Debug için
+                fetch('/api/db_connections')
+                    .then(response => {
+                        console.log('DB connections response status:', response.status);  // Debug için
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Loaded connections data:', data);  // Debug için
+                        
+                        // Select elemanını temizle
+                        savedConnectionsSelect.innerHTML = '<option value="">-- Bağlantı Seçin --</option>';
+                        
+                        // Bağlantıları ekle
+                        if (data.connections && data.connections.length > 0) {
+                            data.connections.forEach(conn => {
+                                const option = document.createElement('option');
+                                option.value = conn;
+                                option.textContent = conn;
+                                savedConnectionsSelect.appendChild(option);
+                            });
+                            // Başlangıçta bilgi mesajı gösterme, sadece hata veya uyarı durumunda göster
+                            // connectionMessage.innerHTML = `<div class="alert alert-info">${data.connections.length} bağlantı yüklendi</div>`; 
+                        } else {
+                            // Kayıtlı bağlantı yoksa uyarı göster
+                            connectionMessage.innerHTML = '<div class="alert alert-warning">Kayıtlı bağlantı bulunamadı</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading connections:', error);
+                        connectionMessage.innerHTML = `<div class="alert alert-danger">Bağlantılar yüklenemedi: ${error}</div>`;
+                    });
+            }
+
+            // Dil modellerini yükle
+            function loadSavedModels() {
+                console.log('Loading models...');  // Debug için
+                fetch('/api/llm_models')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Loaded models:', data);  // Debug için
+                        
+                        // Select elemanını temizle
+                        savedModelsSelect.innerHTML = '<option value="">-- Model Seçin --</option>';
+                        
+                        // Modelleri ekle
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model;
+                            option.textContent = model;
+                            savedModelsSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading models:', error);
+                        modelMessage.innerHTML = `<div class="alert alert-danger">Modeller yüklenemedi: ${error}</div>`;
+                    });
+            }
+            
+            // Uyarı durumunu güncelleyen fonksiyon
+            function updateConfigWarnings() {
+                console.log('Updating config warnings...');
+                fetch('/api/config_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Config status:', data);
+                        
+                        // Uyarı container'ı
+                        const warningsContainer = document.getElementById('configWarnings');
+                        const llmWarning = document.getElementById('llmWarning');
+                        const dbWarning = document.getElementById('dbWarning');
+                        
+                        // Dil modeli uyarısı
+                        if (data.llm_config_valid) {
+                            llmWarning.classList.add('d-none');
+                        } else {
+                            llmWarning.classList.remove('d-none');
+                        }
+                        
+                        // Veritabanı uyarısı
+                        if (data.db_config_valid) {
+                            dbWarning.classList.add('d-none');
+                        } else {
+                            dbWarning.classList.remove('d-none');
+                        }
+                        
+                        // Her iki yapılandırma da tamamlanmışsa tüm uyarıyı gizle
+                        if (data.llm_config_valid && data.db_config_valid) {
+                            warningsContainer.classList.add('d-none');
+                        } else {
+                            warningsContainer.classList.remove('d-none');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating config warnings:', error);
+                    });
+            }
+
+            // Sayfa yüklendiğinde uyarıları güncelle
+            updateConfigWarnings();
+
+            // API'nin çalıştığını kontrol et
+            fetch('/api/config_status')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API çalışıyor:', data);
+                })
+                .catch(error => {
+                    console.error('API hatası:', error);
+                });
+
+            // Modal açıldığında modelleri yükle
+            document.getElementById('llmModelModal').addEventListener('show.bs.modal', function () {
+                loadSavedModels();
+                modelMessage.innerHTML = ''; // Önceki mesajları temizle
+            });
+
+            // Model yükleme butonu
+            loadModelBtn.addEventListener('click', function() {
+                console.log('Load model button clicked');  // Debug için
+                
+                const selectedModel = savedModelsSelect.value;
+                console.log('Selected model:', selectedModel);  // Debug için
+                
+                if (!selectedModel) {
+                    modelMessage.innerHTML = '<div class="alert alert-warning">Lütfen bir model seçin</div>';
+                    return;
+                }
+                
+                modelMessage.innerHTML = '<div class="alert alert-info">Model yükleniyor...</div>';
+                
+                fetch('/api/load_llm_model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: selectedModel }),
+                })
+                .then(response => {
+                    console.log('Load response status:', response.status);  // Debug için
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Load response data:', data);  // Debug için
+                    
+                    if (data.status === 'success') {
+                        // Aktif model bilgisini güncelle
+                        activeModelNameElement.textContent = selectedModel;
+                        
+                        modelMessage.innerHTML = '<div class="alert alert-success">Model başarıyla yüklendi!</div>';
+                        
+                        // Uyarıları güncelle
+                        updateConfigWarnings();
+                        
+                        setTimeout(() => {
+                            llmModelModal.hide();
+                            addMessageToChat('system', `"${selectedModel}" dil modeli aktifleştirildi. Sorularınızı sorabilirsiniz.`);
+                        }, 1500);
+                    } else {
+                        modelMessage.innerHTML = `<div class="alert alert-danger">Model hatası: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Load error:', error);  // Debug için
+                    modelMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+
+            // Test et ve bağlan butonu
+            testAndSaveConnectionBtn.addEventListener('click', function() {
+                console.log('Test and save connection button clicked');  // Debug için
+                
+                // Form verilerini al
+                const connectionData = {
+                    host: document.getElementById('dbHost').value,
+                    name: document.getElementById('dbName').value,
+                    user: document.getElementById('dbUser').value,
+                    password: document.getElementById('dbPassword').value,
+                    port: document.getElementById('dbPort').value,
+                    sslmode: document.getElementById('dbSslmode').value
+                };
+                
+                // Form validasyonu
+                if (!connectionData.host || !connectionData.name || !connectionData.user || !connectionData.password) {
+                    connectionMessage.innerHTML = '<div class="alert alert-warning">Tüm alanları doldurun</div>';
+                    return;
+                }
+                
+                connectionMessage.innerHTML = '<div class="alert alert-info">Bağlantı test ediliyor...</div>';
+                
+                fetch('/api/connect_database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(connectionData),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Test response:', data);  // Debug için
+                    
+                    if (data.status === 'success') {
+                        connectionMessage.innerHTML = '<div class="alert alert-success">Bağlantı başarılı!</div>';
+                        
+                        // Uyarıları güncelle
+                        updateConfigWarnings();
+                        
+                        setTimeout(() => {
+                            dbConnectionModal.hide();
+                            addMessageToChat('system', 'Veritabanı bağlantısı kuruldu. Artık sorularınızı sorabilirsiniz.');
+                        }, 1500);
+                    } else {
+                        connectionMessage.innerHTML = `<div class="alert alert-danger">Bağlantı hatası: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Test error:', error);  // Debug için
+                    connectionMessage.innerHTML = `<div class="alert alert-danger">İstek hatası: ${error}</div>`;
+                });
+            });
+
+            // Mesaj gönderme butonu
+            sendMessageBtn.addEventListener('click', function() {
+                sendMessage();
+            });
+
+            // Enter tuşu ile gönderme
+            userMessageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Mesaj gönderme fonksiyonu
+            function sendMessage() {
+                const userMessage = userMessageInput.value.trim();
+                
+                if (!userMessage) {
+                    return; // Boş mesaj gönderilmesin
+                }
+                
+                // Kullanıcı mesajını ekrana ekle
+                addMessageToChat('user', userMessage);
+                
+                // Mesaj kutusunu temizle
+                userMessageInput.value = '';
+                
+                // Yükleniyor mesajı
+                const loadingId = `loading-${Date.now()}`;
+                addMessageToChat('system', '<div id="'+loadingId+'" class="loading">Yanıt hazırlanıyor...</div>');
+                
+                // API'ye mesajı gönder
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userMessage }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Yükleniyor mesajını kaldır
+                    document.getElementById(loadingId)?.remove();
+                    
+                    if (data.error) {
+                        addMessageToChat('system', `Hata: ${data.error}`);
+                    } else {
+                        // API'den gelen yanıtı ekrana ekle
+                        addMessageToChat('bot', data.response);
+                    }
+                })
+                .catch(error => {
+                    // Yükleniyor mesajını kaldır
+                    document.getElementById(loadingId)?.remove();
+                    
+                    console.error('Chat error:', error);
+                    addMessageToChat('system', `Hata oluştu: ${error}`);
+                });
+            }
+            
+            // Mesajları chat alanına eklemek için fonksiyon
+            function addMessageToChat(sender, message) {
+                const messageDiv = document.createElement('div');
+                
+                // Sınıf ismini düzelt: 'assistant' yerine 'bot' kullan
+                let messageClass = sender;
+                if (sender === 'assistant') {
+                    messageClass = 'bot'; // CSS sınıfıyla eşleşmesi için 'bot' kullan
+                }
+                messageDiv.className = `message ${messageClass}`;
+                
+                // Mesaj içeriğini oluştur
+                const contentDiv = document.createElement('div');
+                // Bot mesajları için ayrı content sınıfı kullanmaya gerek yok, genel .content yeterli
+                contentDiv.className = 'content'; 
+                
+                // Mesaj gönderen bilgisi
+                const senderSpan = document.createElement('span');
+                senderSpan.className = 'sender';
+                
+                if (sender === 'user') {
+                    senderSpan.textContent = 'User';
+                } else if (sender === 'assistant' || sender === 'bot') { // Hem assistant hem bot durumunu kontrol et
+                    senderSpan.textContent = 'AI Asistan';
+                } else {
+                    senderSpan.textContent = 'Sistem';
+                }
+                
+                contentDiv.appendChild(senderSpan);
+                
+                // Mesaj içeriğini ayrı bir div'e ekle
+                const messageTextDiv = document.createElement('div');
+                messageTextDiv.className = 'message-text';
+                
+                // HTML içeriği doğru şekilde ekle - listelerin formatlanması için önemli
+                messageTextDiv.innerHTML = message;
+                
+                contentDiv.appendChild(messageTextDiv);
+                messageDiv.appendChild(contentDiv);
+                
+                // Mesajı messageArea'ya ekle
+                const messageArea = document.getElementById('messageArea'); // messageArea'yı burada seçelim
+                messageArea.appendChild(messageDiv);
+                
+                // Otomatik scroll: messageArea yerine chatContainer'ı scroll et
+                const chatContainer = document.getElementById('chatContainer'); // Scroll edilecek doğru konteyner
+                chatContainer.scrollTop = chatContainer.scrollHeight; // chatContainer'ın en altına scroll et
+            }
+
+            // Örnek: Sistem mesajı ekleme
+            function addSystemMessage(message) {
+                // Liste öğelerini doğru formatlayarak mesaj ekle
+                if (message.includes('- ')) {
+                    // Tire ile başlayan liste öğeleri varsa, bunları <ul><li> formatına dönüştür
+                    const items = message.split('- ').filter(item => item.trim());
+                    let formattedMessage = '<ul>';
+                    items.forEach(item => {
+                        formattedMessage += `<li>${item.trim()}</li>`;
+                    });
+                    formattedMessage += '</ul>';
+                    addMessageToChat('system', formattedMessage);
+                } else {
+                    addMessageToChat('system', message);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

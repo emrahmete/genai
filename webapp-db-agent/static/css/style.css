@@ -67,27 +67,108 @@ body {
     gap: 10px;
 }
 
+/* Mesaj sınıflarını düzelt */
 .message {
-    padding: 10px 15px;
-    border-radius: 15px;
-    max-width: 75%;
-    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 15px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    word-break: break-word;
+    width: fit-content;
+    max-width: 80%;
 }
 
 .message.system {
-    background-color: #e6f2ff;
-    align-self: center;
-    max-width: 90%;
+    background-color: #f0f4c3;
+    margin: 10px auto;
+    border-radius: 18px;
+    padding: 5px 15px;
+    font-size: 0.9rem;
+    max-width: 80%;
+    text-align: center;
 }
 
 .message.user {
-    background-color: #dcf8c6;
-    align-self: flex-end;
+    background-color: #e3f2fd;
+    margin-left: auto;
+    border-radius: 18px 18px 0 18px;
+    text-align: right;
 }
 
 .message.bot {
-    background-color: #f0f0f0;
-    align-self: flex-start;
+    background-color: #f1f3f4;
+    margin-right: auto;
+    border-radius: 18px 18px 18px 0;
+    max-width: 85%;
+}
+
+.content {
+    width: 100%;
+}
+
+.sender {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #495057;
+    display: block;
+}
+
+.message-text {
+    overflow-wrap: break-word;
+}
+
+.message-text pre {
+    white-space: pre-wrap;
+    font-size: 13px;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    overflow-x: auto;
+    text-align: left;
+    margin-top: 8px;
+}
+
+.message-text table {
+    text-align: left;
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+.bot-message {
+    background-color: #f1f3f4;
+    margin-right: auto;
+    border-radius: 18px 18px 18px 0;
+    max-width: 95%; /* Tabloların sığması için daha geniş */
+    padding: 10px 15px;
+    overflow: hidden; /* İçerideki taşmalı içeriği kontrol etmek için */
+}
+
+.bot-content {
+    white-space: pre-line;
+}
+
+.bot-message ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.bot-message li {
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+.bot-message pre {
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 13px;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    overflow-x: auto;
+    margin: 10px 0;
 }
 
 .chat-input-container {
@@ -158,5 +239,162 @@ pre {
 @keyframes bounce {
     0%, 80%, 100% { transform: scale(0); }
     40% { transform: scale(1); }
+}
+
+/* Tablo stilleri */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.bot-message .table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.bot-message .table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+    font-weight: 600;
+}
+
+.bot-message .table th, 
+.bot-message .table td {
+    padding: 6px 8px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.bot-message .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.bot-message .table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.bot-message .table-wrapper {
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin: 10px 0 5px 0;
+}
+
+/* Liste stillerini düzelt */
+.bot-content ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.bot-content li {
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+/* Aktif model bilgisi için stiller */
+.active-model-container {
+    background-color: #f8f9fa;
+    border: 1px solid #e1e5eb;
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.active-model-label {
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.active-model-name {
+    color: #4a6fa5;
+    font-weight: 600;
+}
+
+.message-input-container {
+    background-color: #ffffff;
+    border: 1px solid #e1e5eb;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+}
+
+.input-container .btn {
+    flex-shrink: 0;
+}
+
+#userMessage {
+    flex-grow: 1;
+}
+
+/* Bot mesajlarının liste stillerini düzelt */
+.bot-content ul, 
+.message-text ul {
+    margin: 8px 0;
+    padding-left: 20px;
+    list-style-position: outside;
+    text-align: left;
+}
+
+.bot-content ol, 
+.message-text ol {
+    margin: 8px 0;
+    padding-left: 20px;
+    list-style-position: outside;
+    text-align: left;
+}
+
+.bot-content li, 
+.message-text li {
+    margin-bottom: 6px;
+    text-align: left;
+    display: list-item;
+}
+
+/* Markdown listelerini düzelt */
+.message-text ul li::marker,
+.bot-content ul li::marker {
+    content: "• ";
+}
+
+/* Liste öğelerinin arasına boşluk ekleyin */
+.message-text p,
+.bot-content p {
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+/* Yeni eklenen stiller */
+.message-text ul, 
+.message-text ol {
+    margin-top: 8px;      /* Liste ile üstündeki metin arasına boşluk */
+    margin-bottom: 8px;   /* Liste ile altındaki metin arasına boşluk */
+    padding-left: 25px;   /* Liste öğelerinin girintisi */
+    text-align: left;     /* Liste içeriğini sola hizala */
+}
+
+.message-text li {
+    margin-bottom: 5px;   /* Liste öğeleri arasına boşluk */
+    text-align: left;     /* Liste öğesi içeriğini sola hizala */
+}
+
+/* İsteğe bağlı: Paragraflar arasına boşluk ekle */
+.message-text p {
+    margin-bottom: 10px; 
+    text-align: left;
+}
+.message-text p:last-child {
+    margin-bottom: 0; /* Son paragrafın altına ekstra boşluk ekleme */
 }
 
