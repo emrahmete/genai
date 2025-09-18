@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Delegated Graph + Azure AI Agent</title>
+<style>
+body { font-family: system-ui, Arial; margin: 2rem; max-width: 800px; }
+#output { margin-top:1rem; }
+button { padding:0.6rem 1.2rem; margin: 0.5rem 0.5rem 0 0; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #005a9e; }
+textarea { width:100%; height:80px; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+.chat-container { display: flex; flex-direction: column; gap: 1rem; }
+.message { padding: 1rem; border-radius: 8px; line-height: 1.5; }
+.user-message { background: #e3f2fd; margin-left: 20%; }
+.assistant-message { background: #f5f5f5; margin-right: 20%; white-space: pre-wrap; }
+.processing { color: #0078d4; font-style: italic; }
+.error { color: #d13438; background: #fde7e9; padding: 1rem; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>Graph + Agent Demo</h1>
+<p>Oturum açık. Prompt  girip çalıştırabilirsiniz.</p>
+<textarea id="prompt" placeholder="Örnek: Get my user info">Get my user info</textarea><br/>
+<button id="runBtn">Run Agent</button>
+<button onclick="window.location='/logout'">Logout</button>
+<div id="output" class="chat-container"></div>
+<script>
+document.getElementById('runBtn').onclick = async () => {
+  const prompt = document.getElementById('prompt').value;
+  const outputDiv = document.getElementById('output');
+  
+  // Add user message
+  outputDiv.innerHTML += `<div class="message user-message">${prompt}</div>`;
+  
+  // Add processing indicator
+  const processingId = 'processing-' + Date.now();
+  outputDiv.innerHTML += `<div id="${processingId}" class="processing">Processing...</div>`;
+  
+  try {
+    const res = await fetch('/api/agent/run', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({prompt})
+    });
+    
+    const data = await res.json();
+    
+    // Remove processing indicator
+    document.getElementById(processingId).remove();
+    
+    // Add assistant response
+    if (data.response) {
+      outputDiv.innerHTML += `<div class="message assistant-message">${data.response}</div>`;
+    } else if (data.error) {
+      outputDiv.innerHTML += `<div class="error">Error: ${data.error}</div>`;
+    } else {
+      // Fallback if response format is unexpected
+      outputDiv.innerHTML += `<div class="message assistant-message">${JSON.stringify(data, null, 2)}</div>`;
+    }
+    
+    // Clear input for next message
+    document.getElementById('prompt').value = '';
+    
+    // Scroll to bottom
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+    
+  } catch (error) {
+    document.getElementById(processingId).remove();
+    outputDiv.innerHTML += `<div class="error">Error: ${error.message}</div>`;
+  }
+};
+
+// Allow Enter key to send message
+document.getElementById('prompt').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('runBtn').click();
+  }
+});
+</script>
+</body>
+</html>
